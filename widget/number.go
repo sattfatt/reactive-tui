@@ -121,26 +121,26 @@ func (n *NumberInput) commitEdit() {
 }
 
 func (n *NumberInput) HandleKey(ev KeyEvent) bool {
-	if n.Editing {
-		return n.handleEditKey(ev)
+	if !n.Editing {
+		return false
 	}
-	return n.handleNavKey(ev)
-}
-
-func (n *NumberInput) handleNavKey(ev KeyEvent) bool {
-	switch {
-	case ev.Key == int(tcell.KeyUp) || ev.Rune == 'k':
-		n.setValue(n.Value + n.Step)
-		return true
-	case ev.Key == int(tcell.KeyDown) || ev.Rune == 'j':
-		n.setValue(n.Value - n.Step)
-		return true
-	}
-	return false
+	return n.handleEditKey(ev)
 }
 
 func (n *NumberInput) handleEditKey(ev KeyEvent) bool {
 	switch tcell.Key(ev.Key) {
+	case tcell.KeyUp:
+		n.commitEdit()
+		n.setValue(n.Value + n.Step)
+		n.editBuf = strconv.Itoa(n.Value)
+		n.editCursor = len(n.editBuf)
+		return true
+	case tcell.KeyDown:
+		n.commitEdit()
+		n.setValue(n.Value - n.Step)
+		n.editBuf = strconv.Itoa(n.Value)
+		n.editCursor = len(n.editBuf)
+		return true
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if n.editCursor > 0 {
 			n.editBuf = n.editBuf[:n.editCursor-1] + n.editBuf[n.editCursor:]
