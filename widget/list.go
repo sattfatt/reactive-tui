@@ -16,7 +16,7 @@ type List struct {
 func NewList(items func() []string, onSelect func(int)) *List {
 	return &List{
 		Base: Base{
-			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault},
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG},
 			Flex:  FlexProps{Basis: -1, Shrink: 1, Grow: 1, MinHeight: 1, MinWidth: 1},
 		},
 		Items:    items,
@@ -52,6 +52,7 @@ func (l *List) Render(r *render.Renderer, x, y, w, h int) {
 	l.Base.SetRect(x, y, w, h)
 	if l.Style.Border != style.BorderNone {
 		r.DrawBorder(x, y, w, h, l.Style.Border, l.Style)
+		l.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := l.Style.InnerRect(x, y, w, h)
@@ -66,8 +67,8 @@ func (l *List) Render(r *render.Renderer, x, y, w, h int) {
 		}
 		st := l.Style
 		if i == l.Selected && l.Focused {
-			st.FG = tcell.ColorBlack
-			st.BG = tcell.ColorWhite
+			st.FG = style.CurrentTheme.SelectionFG
+			st.BG = style.CurrentTheme.SelectionBG
 			r.FillRect(ix, iy+i, iw, 1, ' ', st)
 		}
 		label := item

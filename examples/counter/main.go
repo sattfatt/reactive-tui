@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/satyam/reactive-tui/app"
 	"github.com/satyam/reactive-tui/signal"
 	"github.com/satyam/reactive-tui/style"
@@ -34,19 +33,19 @@ func main() {
 
 	title := widget.StaticText("Reactive TUI Counter")
 	title.Style.Bold = true
-	title.Style.FG = tcell.ColorAqua
+	title.Style.FG = style.CurrentTheme.NavFocusFG
 
 	countDisplay := widget.BoundText(func() string {
 		return fmt.Sprintf("Count: %d", count.Get())
 	})
 
 	help := widget.StaticText("Tab: switch focus | Enter/Space: press button | Ctrl+C: quit")
-	help.Style.FG = tcell.ColorGray
+	help.Style.FG = style.CurrentTheme.MutedFG
 
 	root := widget.VBox(title, countDisplay, btnRow, help)
 	root.Style.Border = style.BorderRounded
 	root.Style.Padding = style.Pad(1)
-	root.Style.FG = tcell.ColorWhite
+	root.Style.FG = style.CurrentTheme.FG
 	root.Flex.Grow = 1
 
 	a := app.New(root)

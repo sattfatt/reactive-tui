@@ -20,7 +20,7 @@ type Tabs struct {
 func NewTabs(tabs ...Tab) *Tabs {
 	return &Tabs{
 		Base: Base{
-			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault},
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG},
 			Flex:  FlexProps{Basis: -1, Grow: 1, Shrink: 1, MinHeight: 4, MinWidth: 10},
 		},
 		Tabs: tabs,
@@ -49,6 +49,19 @@ func (t *Tabs) HandleKey(ev KeyEvent) bool {
 			t.Active++
 			return true
 		}
+	case tcell.KeyRune:
+		switch ev.Rune {
+		case 'h':
+			if t.Active > 0 {
+				t.Active--
+				return true
+			}
+		case 'l':
+			if t.Active < len(t.Tabs)-1 {
+				t.Active++
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -56,12 +69,16 @@ func (t *Tabs) HandleKey(ev KeyEvent) bool {
 func (t *Tabs) Render(r *render.Renderer, x, y, w, h int) {
 	t.Base.SetRect(x, y, w, h)
 	st := t.Style
-	if t.Focused {
-		st.FG = tcell.ColorYellow
-	}
 
+	borderSt := st
+	if t.Focused {
+		borderSt.FG = style.CurrentTheme.NavFocusFG
+	} else {
+		borderSt.FG = style.CurrentTheme.BorderFG
+	}
 	if st.Border != style.BorderNone {
-		r.DrawBorder(x, y, w, h, st.Border, st)
+		r.DrawBorder(x, y, w, h, st.Border, borderSt)
+		t.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := st.InnerRect(x, y, w, h)
@@ -79,7 +96,7 @@ func (t *Tabs) Render(r *render.Renderer, x, y, w, h int) {
 
 		tabStyle := st
 		if i == t.Active {
-			tabStyle.FG, tabStyle.BG = tcell.ColorBlack, tcell.ColorWhite
+			tabStyle.FG, tabStyle.BG = style.CurrentTheme.SelectionFG, style.CurrentTheme.SelectionBG
 			r.FillRect(ix+col, iy, len(label), 1, ' ', tabStyle)
 		}
 		r.DrawText(ix+col, iy, label, tabStyle, len(label))

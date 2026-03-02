@@ -35,6 +35,20 @@ type KeyEvent struct {
 	Mod  int // tcell.ModMask cast to int
 }
 
+// Editable is implemented by widgets that accept text input (Input, TextArea,
+// Terminal, FuzzyFinder). The app enters Edit mode when the user presses 'i'
+// on an Editable widget.
+type Editable interface {
+	IsEditable() bool
+}
+
+// EscapeThreshold is optionally implemented by Editable widgets that use
+// Escape internally (e.g., terminal/vim). Returns the number of consecutive
+// Escape presses needed to exit Edit mode. Default is 1 if not implemented.
+type EscapeThreshold interface {
+	EscapesToExit() int
+}
+
 // Rect stores the last rendered position and size.
 type Rect struct {
 	X, Y, W, H int
@@ -60,9 +74,11 @@ func DefaultFlexProps() FlexProps {
 
 // Base is embedded by widgets for default implementations.
 type Base struct {
-	Style   style.Style
-	Flex    FlexProps
-	Focused bool
+	Style      style.Style
+	Flex       FlexProps
+	Label      string // optional label drawn on the top border
+	Focused    bool
+	Editing    bool // set by app when in edit mode on this widget
 	LayoutRect Rect // populated during Render
 }
 
@@ -72,5 +88,26 @@ func (b *Base) Children() []Node        { return nil }
 func (b *Base) Focusable() bool         { return false }
 func (b *Base) HandleKey(KeyEvent) bool { return false }
 func (b *Base) SetFocused(f bool)       { b.Focused = f }
+func (b *Base) SetEditing(e bool)       { b.Editing = e }
 func (b *Base) SetRect(x, y, w, h int) { b.LayoutRect = Rect{x, y, w, h} }
 func (b *Base) GetRect() Rect           { return b.LayoutRect }
+
+// RenderLabel draws the Base.Label as a badge on the top-right of the border.
+// Call this immediately after DrawBorder. It's a no-op if Label is empty or
+// there's no border.
+func (b *Base) RenderLabel(r *render.Renderer, x, y, w int) {
+	if b.Label == "" || b.Style.Border == style.BorderNone {
+		return
+	}
+	badge := " " + b.Label + " "
+	if w <= len(badge)+4 {
+		return // not enough room
+	}
+	badgeSt := style.Style{
+		FG:   style.CurrentTheme.BG,
+		BG:   style.CurrentTheme.ButtonFG,
+		Bold: true,
+	}
+	bx := x + w - len(badge) - 2 // padding from corner
+	r.DrawText(bx, y, badge, badgeSt, len(badge))
+}

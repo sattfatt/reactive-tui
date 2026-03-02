@@ -17,10 +17,12 @@ type TextArea struct {
 	OnChange  func(string)
 }
 
+func (ta *TextArea) IsEditable() bool { return true }
+
 func NewTextArea(onChange func(string)) *TextArea {
 	return &TextArea{
 		Base: Base{
-			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault, Border: style.BorderSingle},
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG, Border: style.BorderSingle},
 			Flex:  FlexProps{Basis: -1, Grow: 1, Shrink: 1, MinHeight: 5, MinWidth: 10},
 		},
 		Lines:    []string{""},
@@ -53,6 +55,9 @@ func (ta *TextArea) changed() {
 func (ta *TextArea) HandleKey(ev KeyEvent) bool {
 	switch tcell.Key(ev.Key) {
 	case tcell.KeyRune:
+		if !ta.Editing {
+			return false // let nav mode handle hjkl etc.
+		}
 		line := ta.Lines[ta.CursorRow]
 		ta.Lines[ta.CursorRow] = line[:ta.CursorCol] + string(ev.Rune) + line[ta.CursorCol:]
 		ta.CursorCol++
@@ -103,38 +108,38 @@ func (ta *TextArea) HandleKey(ev KeyEvent) bool {
 		ta.changed()
 		return true
 
-	case tcell.KeyLeft:
-		if ta.CursorCol > 0 {
-			ta.CursorCol--
-		} else if ta.CursorRow > 0 {
-			ta.CursorRow--
-			ta.CursorCol = len(ta.Lines[ta.CursorRow])
+	case tcell.KeyLeft, tcell.KeyRight, tcell.KeyUp, tcell.KeyDown:
+		if !ta.Editing {
+			return false
 		}
-		return true
-
-	case tcell.KeyRight:
-		if ta.CursorCol < len(ta.Lines[ta.CursorRow]) {
-			ta.CursorCol++
-		} else if ta.CursorRow < len(ta.Lines)-1 {
-			ta.CursorRow++
-			ta.CursorCol = 0
-		}
-		return true
-
-	case tcell.KeyUp:
-		if ta.CursorRow > 0 {
-			ta.CursorRow--
-			if ta.CursorCol > len(ta.Lines[ta.CursorRow]) {
+		switch tcell.Key(ev.Key) {
+		case tcell.KeyLeft:
+			if ta.CursorCol > 0 {
+				ta.CursorCol--
+			} else if ta.CursorRow > 0 {
+				ta.CursorRow--
 				ta.CursorCol = len(ta.Lines[ta.CursorRow])
 			}
-		}
-		return true
-
-	case tcell.KeyDown:
-		if ta.CursorRow < len(ta.Lines)-1 {
-			ta.CursorRow++
-			if ta.CursorCol > len(ta.Lines[ta.CursorRow]) {
-				ta.CursorCol = len(ta.Lines[ta.CursorRow])
+		case tcell.KeyRight:
+			if ta.CursorCol < len(ta.Lines[ta.CursorRow]) {
+				ta.CursorCol++
+			} else if ta.CursorRow < len(ta.Lines)-1 {
+				ta.CursorRow++
+				ta.CursorCol = 0
+			}
+		case tcell.KeyUp:
+			if ta.CursorRow > 0 {
+				ta.CursorRow--
+				if ta.CursorCol > len(ta.Lines[ta.CursorRow]) {
+					ta.CursorCol = len(ta.Lines[ta.CursorRow])
+				}
+			}
+		case tcell.KeyDown:
+			if ta.CursorRow < len(ta.Lines)-1 {
+				ta.CursorRow++
+				if ta.CursorCol > len(ta.Lines[ta.CursorRow]) {
+					ta.CursorCol = len(ta.Lines[ta.CursorRow])
+				}
 			}
 		}
 		return true
@@ -145,12 +150,20 @@ func (ta *TextArea) HandleKey(ev KeyEvent) bool {
 func (ta *TextArea) Render(r *render.Renderer, x, y, w, h int) {
 	ta.Base.SetRect(x, y, w, h)
 	st := ta.Style
-	if ta.Focused {
-		st.FG = tcell.ColorYellow
-	}
 
+	borderSt := st
+	if ta.Focused {
+		if ta.Editing {
+			borderSt.FG = style.CurrentTheme.EditFocusFG
+		} else {
+			borderSt.FG = style.CurrentTheme.NavFocusFG
+		}
+	} else {
+		borderSt.FG = style.CurrentTheme.BorderFG
+	}
 	if st.Border != style.BorderNone {
-		r.DrawBorder(x, y, w, h, st.Border, st)
+		r.DrawBorder(x, y, w, h, st.Border, borderSt)
+		ta.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := st.InnerRect(x, y, w, h)
@@ -187,7 +200,7 @@ func (ta *TextArea) Render(r *render.Renderer, x, y, w, h int) {
 			if ta.CursorCol < len(ta.Lines[ta.CursorRow]) {
 				ch = rune(ta.Lines[ta.CursorRow][ta.CursorCol])
 			}
-			cursorStyle := style.Style{FG: tcell.ColorBlack, BG: tcell.ColorWhite}
+			cursorStyle := style.Style{FG: style.CurrentTheme.CursorFG, BG: style.CurrentTheme.CursorBG}
 			r.Screen.SetContent(ix+ta.CursorCol, iy+cursorScreenRow, ch, nil, cursorStyle.TcellStyle())
 		}
 	}

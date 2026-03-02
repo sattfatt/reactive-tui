@@ -17,7 +17,7 @@ type Input struct {
 func NewInput(placeholder string, onChange func(string)) *Input {
 	return &Input{
 		Base: Base{
-			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault, Border: style.BorderSingle},
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG, Border: style.BorderSingle},
 			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 3, MinWidth: 5},
 		},
 		Placeholder: placeholder,
@@ -25,11 +25,15 @@ func NewInput(placeholder string, onChange func(string)) *Input {
 	}
 }
 
-func (inp *Input) Focusable() bool { return true }
+func (inp *Input) Focusable() bool  { return true }
+func (inp *Input) IsEditable() bool { return true }
 
 func (inp *Input) HandleKey(ev KeyEvent) bool {
 	switch tcell.Key(ev.Key) {
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
+		if !inp.Editing {
+			return false
+		}
 		if inp.Cursor > 0 {
 			inp.Value = inp.Value[:inp.Cursor-1] + inp.Value[inp.Cursor:]
 			inp.Cursor--
@@ -39,6 +43,9 @@ func (inp *Input) HandleKey(ev KeyEvent) bool {
 		}
 		return true
 	case tcell.KeyDelete:
+		if !inp.Editing {
+			return false
+		}
 		if inp.Cursor < len(inp.Value) {
 			inp.Value = inp.Value[:inp.Cursor] + inp.Value[inp.Cursor+1:]
 			if inp.OnChange != nil {
@@ -46,17 +53,24 @@ func (inp *Input) HandleKey(ev KeyEvent) bool {
 			}
 		}
 		return true
-	case tcell.KeyLeft:
-		if inp.Cursor > 0 {
-			inp.Cursor--
+	case tcell.KeyLeft, tcell.KeyRight:
+		if !inp.Editing {
+			return false
 		}
-		return true
-	case tcell.KeyRight:
-		if inp.Cursor < len(inp.Value) {
-			inp.Cursor++
+		if tcell.Key(ev.Key) == tcell.KeyLeft {
+			if inp.Cursor > 0 {
+				inp.Cursor--
+			}
+		} else {
+			if inp.Cursor < len(inp.Value) {
+				inp.Cursor++
+			}
 		}
 		return true
 	case tcell.KeyRune:
+		if !inp.Editing {
+			return false
+		}
 		inp.Value = inp.Value[:inp.Cursor] + string(ev.Rune) + inp.Value[inp.Cursor:]
 		inp.Cursor++
 		if inp.OnChange != nil {
@@ -70,11 +84,20 @@ func (inp *Input) HandleKey(ev KeyEvent) bool {
 func (inp *Input) Render(r *render.Renderer, x, y, w, h int) {
 	inp.Base.SetRect(x, y, w, h)
 	st := inp.Style
-	if inp.Focused {
-		st.FG = tcell.ColorYellow
-	}
 
-	r.DrawBorder(x, y, w, h, st.Border, st)
+	// Border with themed color
+	borderSt := st
+	if inp.Focused {
+		if inp.Editing {
+			borderSt.FG = style.CurrentTheme.EditFocusFG
+		} else {
+			borderSt.FG = style.CurrentTheme.NavFocusFG
+		}
+	} else {
+		borderSt.FG = style.CurrentTheme.BorderFG
+	}
+	r.DrawBorder(x, y, w, h, st.Border, borderSt)
+	inp.Base.RenderLabel(r, x, y, w)
 
 	ix, iy, iw, _ := st.InnerRect(x, y, w, h)
 	if iw <= 0 {
@@ -84,7 +107,7 @@ func (inp *Input) Render(r *render.Renderer, x, y, w, h int) {
 	display := inp.Value
 	if len(display) == 0 && !inp.Focused {
 		display = inp.Placeholder
-		st.FG = tcell.ColorGray
+		st.FG = style.CurrentTheme.PlaceholderFG
 	}
 
 	if len(display) > iw {
@@ -100,7 +123,7 @@ func (inp *Input) Render(r *render.Renderer, x, y, w, h int) {
 			if inp.Cursor < len(inp.Value) {
 				ch = rune(inp.Value[inp.Cursor])
 			}
-			cursorStyle := style.Style{FG: tcell.ColorBlack, BG: tcell.ColorWhite}
+			cursorStyle := style.Style{FG: style.CurrentTheme.CursorFG, BG: style.CurrentTheme.CursorBG}
 			r.Screen.SetContent(cursorX, iy, ch, nil, cursorStyle.TcellStyle())
 		}
 	}

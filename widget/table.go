@@ -26,7 +26,7 @@ type Table struct {
 func NewTable(columns []TableColumn, rows func() [][]string, onSelect func(int)) *Table {
 	return &Table{
 		Base: Base{
-			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault, Border: style.BorderSingle},
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG, Border: style.BorderSingle},
 			Flex:  FlexProps{Basis: -1, Grow: 1, Shrink: 1, MinHeight: 4, MinWidth: 20},
 		},
 		Columns:  columns,
@@ -35,7 +35,8 @@ func NewTable(columns []TableColumn, rows func() [][]string, onSelect func(int))
 	}
 }
 
-func (t *Table) Focusable() bool { return true }
+func (t *Table) Focusable() bool  { return true }
+func (t *Table) IsEditable() bool { return true }
 
 // resolveColumnWidths computes the actual width of each column.
 func (t *Table) resolveColumnWidths(totalWidth int) []int {
@@ -98,6 +99,22 @@ func (t *Table) HandleKey(ev KeyEvent) bool {
 			t.OnSelect(t.Selected)
 		}
 		return true
+	case tcell.KeyRune:
+		if !t.Editing {
+			return false
+		}
+		switch ev.Rune {
+		case 'j':
+			if t.Selected < len(rows)-1 {
+				t.Selected++
+			}
+			return true
+		case 'k':
+			if t.Selected > 0 {
+				t.Selected--
+			}
+			return true
+		}
 	}
 	return false
 }
@@ -106,8 +123,19 @@ func (t *Table) Render(r *render.Renderer, x, y, w, h int) {
 	t.Base.SetRect(x, y, w, h)
 	st := t.Style
 
+	borderSt := st
+	if t.Focused {
+		if t.Editing {
+			borderSt.FG = style.CurrentTheme.EditFocusFG
+		} else {
+			borderSt.FG = style.CurrentTheme.NavFocusFG
+		}
+	} else {
+		borderSt.FG = style.CurrentTheme.BorderFG
+	}
 	if st.Border != style.BorderNone {
-		r.DrawBorder(x, y, w, h, st.Border, st)
+		r.DrawBorder(x, y, w, h, st.Border, borderSt)
+		t.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := st.InnerRect(x, y, w, h)
@@ -175,8 +203,8 @@ func (t *Table) Render(r *render.Renderer, x, y, w, h int) {
 		rowStyle := st
 		fill := false
 		if rowIdx == t.Selected && t.Focused {
-			rowStyle.FG = tcell.ColorBlack
-			rowStyle.BG = tcell.ColorWhite
+			rowStyle.FG = style.CurrentTheme.SelectionFG
+			rowStyle.BG = style.CurrentTheme.SelectionBG
 			fill = true
 		}
 		drawRow(iy+dataStartY+i, rows[rowIdx], rowStyle, fill)

@@ -30,7 +30,7 @@ type FuzzyFinder struct {
 func NewFuzzyFinder(items []string, onSelect func(int)) *FuzzyFinder {
 	ff := &FuzzyFinder{
 		Base: Base{
-			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault, Border: style.BorderSingle},
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG, Border: style.BorderSingle},
 			Flex:  FlexProps{Basis: -1, Grow: 1, Shrink: 1, MinHeight: 5, MinWidth: 15},
 		},
 		AllItems: items,
@@ -40,7 +40,8 @@ func NewFuzzyFinder(items []string, onSelect func(int)) *FuzzyFinder {
 	return ff
 }
 
-func (ff *FuzzyFinder) Focusable() bool { return true }
+func (ff *FuzzyFinder) Focusable() bool  { return true }
+func (ff *FuzzyFinder) IsEditable() bool { return true }
 
 func (ff *FuzzyFinder) Filtered() []FuzzyMatch { return ff.filtered }
 
@@ -75,6 +76,9 @@ func (ff *FuzzyFinder) HandleKey(ev KeyEvent) bool {
 		}
 		return true
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
+		if !ff.Editing {
+			return false
+		}
 		if ff.cursor > 0 {
 			ff.query = ff.query[:ff.cursor-1] + ff.query[ff.cursor:]
 			ff.cursor--
@@ -82,22 +86,32 @@ func (ff *FuzzyFinder) HandleKey(ev KeyEvent) bool {
 		}
 		return true
 	case tcell.KeyDelete:
+		if !ff.Editing {
+			return false
+		}
 		if ff.cursor < len(ff.query) {
 			ff.query = ff.query[:ff.cursor] + ff.query[ff.cursor+1:]
 			ff.refilter()
 		}
 		return true
-	case tcell.KeyLeft:
-		if ff.cursor > 0 {
-			ff.cursor--
+	case tcell.KeyLeft, tcell.KeyRight:
+		if !ff.Editing {
+			return false
 		}
-		return true
-	case tcell.KeyRight:
-		if ff.cursor < len(ff.query) {
-			ff.cursor++
+		if tcell.Key(ev.Key) == tcell.KeyLeft {
+			if ff.cursor > 0 {
+				ff.cursor--
+			}
+		} else {
+			if ff.cursor < len(ff.query) {
+				ff.cursor++
+			}
 		}
 		return true
 	case tcell.KeyRune:
+		if !ff.Editing {
+			return false
+		}
 		ff.query = ff.query[:ff.cursor] + string(ev.Rune) + ff.query[ff.cursor:]
 		ff.cursor++
 		ff.refilter()
@@ -110,8 +124,19 @@ func (ff *FuzzyFinder) Render(r *render.Renderer, x, y, w, h int) {
 	ff.Base.SetRect(x, y, w, h)
 	st := ff.Style
 
+	borderSt := st
+	if ff.Focused {
+		if ff.Editing {
+			borderSt.FG = style.CurrentTheme.EditFocusFG
+		} else {
+			borderSt.FG = style.CurrentTheme.NavFocusFG
+		}
+	} else {
+		borderSt.FG = style.CurrentTheme.BorderFG
+	}
 	if st.Border != style.BorderNone {
-		r.DrawBorder(x, y, w, h, st.Border, st)
+		r.DrawBorder(x, y, w, h, st.Border, borderSt)
+		ff.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := st.InnerRect(x, y, w, h)
@@ -124,11 +149,7 @@ func (ff *FuzzyFinder) Render(r *render.Renderer, x, y, w, h int) {
 	if len(prompt) > iw {
 		prompt = prompt[:iw]
 	}
-	inputStyle := st
-	if ff.Focused {
-		inputStyle.FG = tcell.ColorYellow
-	}
-	r.DrawText(ix, iy, prompt, inputStyle, iw)
+	r.DrawText(ix, iy, prompt, st, iw)
 
 	// Draw cursor
 	if ff.Focused {
@@ -138,7 +159,7 @@ func (ff *FuzzyFinder) Render(r *render.Renderer, x, y, w, h int) {
 			if ff.cursor < len(ff.query) {
 				ch = rune(ff.query[ff.cursor])
 			}
-			cursorStyle := style.Style{FG: tcell.ColorBlack, BG: tcell.ColorWhite}
+			cursorStyle := style.Style{FG: style.CurrentTheme.CursorFG, BG: style.CurrentTheme.CursorBG}
 			r.Screen.SetContent(cursorX, iy, ch, nil, cursorStyle.TcellStyle())
 		}
 	}
@@ -167,8 +188,8 @@ func (ff *FuzzyFinder) Render(r *render.Renderer, x, y, w, h int) {
 		item := ff.filtered[idx]
 		rowStyle := st
 		if idx == ff.selected && ff.Focused {
-			rowStyle.FG = tcell.ColorBlack
-			rowStyle.BG = tcell.ColorWhite
+			rowStyle.FG = style.CurrentTheme.SelectionFG
+			rowStyle.BG = style.CurrentTheme.SelectionBG
 			r.FillRect(ix, iy+listStartY+i, iw, 1, ' ', rowStyle)
 		}
 		text := item.Text

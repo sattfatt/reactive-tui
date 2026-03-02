@@ -193,11 +193,11 @@ func TestButtonRender(t *testing.T) {
 	defer s.Fini()
 
 	b := NewButton("OK", nil)
-	b.Render(r, 0, 0, 10, 3)
+	b.Render(r, 0, 0, 10, 1)
 
-	// Should have a border
-	if getCell(s, 0, 0) != '┌' {
-		t.Errorf("expected border, got %c", getCell(s, 0, 0))
+	// Should have label with brackets: "[ OK ]" centered in 10 = at x=2
+	if getCell(s, 2, 0) != '[' {
+		t.Errorf("expected '[', got %c", getCell(s, 2, 0))
 	}
 }
 
@@ -207,11 +207,11 @@ func TestButtonFocusedRender(t *testing.T) {
 
 	b := NewButton("OK", nil)
 	b.SetFocused(true)
-	b.Render(r, 0, 0, 10, 3)
+	b.Render(r, 0, 0, 10, 1)
 
-	// Check that it renders (colors inverted is hard to test, but we can check it doesn't panic)
-	if getCell(s, 0, 0) != '┌' {
-		t.Errorf("expected border on focused button, got %c", getCell(s, 0, 0))
+	// Should render without panic
+	if getCell(s, 2, 0) != '[' {
+		t.Errorf("expected '[' on focused button, got %c", getCell(s, 2, 0))
 	}
 }
 
@@ -227,6 +227,7 @@ func TestInputFocusable(t *testing.T) {
 func TestInputTypeRune(t *testing.T) {
 	var lastValue string
 	inp := NewInput("", func(v string) { lastValue = v })
+	inp.Editing = true
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'b'})
 
@@ -243,6 +244,7 @@ func TestInputTypeRune(t *testing.T) {
 
 func TestInputBackspace(t *testing.T) {
 	inp := NewInput("", nil)
+	inp.Editing = true
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'b'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyBackspace2)})
@@ -265,6 +267,7 @@ func TestInputBackspaceAtStart(t *testing.T) {
 
 func TestInputDelete(t *testing.T) {
 	inp := NewInput("", nil)
+	inp.Editing = true
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'b'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyLeft)})
@@ -277,6 +280,7 @@ func TestInputDelete(t *testing.T) {
 
 func TestInputCursorMovement(t *testing.T) {
 	inp := NewInput("", nil)
+	inp.Editing = true
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'b'})
 
@@ -311,6 +315,7 @@ func TestInputCursorMovement(t *testing.T) {
 
 func TestInputInsertAtCursor(t *testing.T) {
 	inp := NewInput("", nil)
+	inp.Editing = true
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'c'})
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyLeft)})
@@ -336,6 +341,7 @@ func TestInputRender(t *testing.T) {
 
 func TestInputNilOnChange(t *testing.T) {
 	inp := NewInput("", nil)
+	inp.Editing = true
 	// Should not panic
 	inp.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'x'})
 }
@@ -476,18 +482,18 @@ func TestVBoxAutoSizesChildren(t *testing.T) {
 	)
 	box.Render(r, 0, 0, 80, 24)
 
-	// Text gets 1 row, button gets 3 rows (border+content+border), text gets 1 row
+	// Text gets 1 row, button gets 1 row (no border), text gets 1 row
 	// Row 0: "AAA"
 	if getCell(s, 0, 0) != 'A' {
 		t.Errorf("expected 'A' at (0,0), got %c", getCell(s, 0, 0))
 	}
-	// Row 1: button border top
-	if getCell(s, 0, 1) != '┌' {
-		t.Errorf("expected button border at (0,1), got %c", getCell(s, 0, 1))
+	// Row 1: button label centered - "[ B ]" in 80 cols, left pad = 37
+	if getCell(s, 37, 1) != '[' {
+		t.Errorf("expected button label at (37,1), got %c", getCell(s, 37, 1))
 	}
-	// Row 4: "CCC"
-	if getCell(s, 0, 4) != 'C' {
-		t.Errorf("expected 'C' at (0,4), got %c", getCell(s, 0, 4))
+	// Row 2: "CCC"
+	if getCell(s, 0, 2) != 'C' {
+		t.Errorf("expected 'C' at (0,2), got %c", getCell(s, 0, 2))
 	}
 }
 
@@ -515,15 +521,15 @@ func TestBoxEmptyChildren(t *testing.T) {
 }
 
 func TestBoxFlexPropsComputesMinHeight(t *testing.T) {
-	// VBox with 2 text (1 row each) + 1 button (3 rows) = 5 min height
+	// VBox with 2 text (1 row each) + 1 button (1 row) = 3 min height
 	box := VBox(
 		StaticText("a"),
 		NewButton("b", nil),
 		StaticText("c"),
 	)
 	fp := box.FlexProps()
-	if fp.MinHeight < 5 {
-		t.Errorf("expected MinHeight >= 5, got %d", fp.MinHeight)
+	if fp.MinHeight < 3 {
+		t.Errorf("expected MinHeight >= 3, got %d", fp.MinHeight)
 	}
 }
 
@@ -579,8 +585,8 @@ func TestButtonConstructorDefaults(t *testing.T) {
 	if fp.Basis != -1 {
 		t.Errorf("expected Basis=-1, got %d", fp.Basis)
 	}
-	if fp.MinHeight != 3 {
-		t.Errorf("expected MinHeight=3, got %d", fp.MinHeight)
+	if fp.MinHeight != 1 {
+		t.Errorf("expected MinHeight=1, got %d", fp.MinHeight)
 	}
 }
 
@@ -720,6 +726,7 @@ func TestTextAreaSetText(t *testing.T) {
 func TestTextAreaInsertRune(t *testing.T) {
 	var changed string
 	ta := NewTextArea(func(s string) { changed = s })
+	ta.Editing = true
 	ta.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'h'})
 	ta.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'i'})
 	if ta.Text() != "hi" {
@@ -732,6 +739,7 @@ func TestTextAreaInsertRune(t *testing.T) {
 
 func TestTextAreaEnterSplitsLine(t *testing.T) {
 	ta := NewTextArea(nil)
+	ta.Editing = true
 	ta.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 	ta.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'b'})
 	ta.HandleKey(KeyEvent{Key: int(tcell.KeyLeft)})
@@ -781,6 +789,7 @@ func TestTextAreaDeleteMergesLines(t *testing.T) {
 func TestTextAreaCursorMovement(t *testing.T) {
 	ta := NewTextArea(nil)
 	ta.SetText("abc\ndef")
+	ta.Editing = true
 
 	// Move down
 	ta.CursorRow = 0
@@ -1052,6 +1061,7 @@ func TestFuzzyFinderDefaults(t *testing.T) {
 
 func TestFuzzyFinderFilters(t *testing.T) {
 	ff := NewFuzzyFinder([]string{"apple", "banana", "avocado"}, nil)
+	ff.Editing = true
 	ff.HandleKey(KeyEvent{Key: int(tcell.KeyRune), Rune: 'a'})
 
 	// "apple" and "avocado" and "banana" all contain 'a'
@@ -1189,8 +1199,8 @@ func TestTerminalSGRColors(t *testing.T) {
 	// Reset
 	term.Write([]byte("\x1b[0mN"))
 	_, st = term.GetCell(0, 1)
-	if st.FG != tcell.ColorWhite {
-		t.Errorf("expected white after reset, got %v", st.FG)
+	if st.FG != style.CurrentTheme.FG {
+		t.Errorf("expected theme FG after reset, got %v", st.FG)
 	}
 }
 

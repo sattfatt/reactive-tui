@@ -26,8 +26,8 @@ func NewProgressBar(value func() float64) *ProgressBar {
 		Value:      value,
 		FilledChar: '█',
 		EmptyChar:  '░',
-		FilledFG:   tcell.ColorGreen,
-		EmptyFG:    tcell.ColorDarkGray,
+		FilledFG:   style.CurrentTheme.ProgressFilledFG,
+		EmptyFG:    style.CurrentTheme.ProgressEmptyFG,
 		ShowLabel:  true,
 	}
 }
@@ -36,6 +36,7 @@ func (p *ProgressBar) Render(r *render.Renderer, x, y, w, h int) {
 	p.Base.SetRect(x, y, w, h)
 	if p.Style.Border != style.BorderNone {
 		r.DrawBorder(x, y, w, h, p.Style.Border, p.Style)
+		p.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := p.Style.InnerRect(x, y, w, h)
@@ -85,7 +86,7 @@ func (p *ProgressBar) Render(r *render.Renderer, x, y, w, h int) {
 	// Draw label
 	if label != "" {
 		labelStyle := p.Style
-		labelStyle.FG = tcell.ColorWhite
+		labelStyle.FG = style.CurrentTheme.FG
 		r.DrawText(ix+barWidth, iy, label, labelStyle, len(label))
 	}
 }

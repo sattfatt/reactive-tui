@@ -97,7 +97,14 @@ func (b *Box) Render(r *render.Renderer, x, y, w, h int) {
 	b.Base.SetRect(x, y, w, h)
 	// Draw border and background
 	if b.Style.Border != style.BorderNone {
-		r.DrawBorder(x, y, w, h, b.Style.Border, b.Style)
+		borderSt := b.Style
+		if b.Focused {
+			borderSt.FG = style.CurrentTheme.NavFocusFG
+		} else {
+			borderSt.FG = style.CurrentTheme.BorderFG
+		}
+		r.DrawBorder(x, y, w, h, b.Style.Border, borderSt)
+		b.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := b.Style.InnerRect(x, y, w, h)

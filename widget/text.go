@@ -16,7 +16,10 @@ type Text struct {
 // StaticText creates a text widget with a fixed string.
 func StaticText(s string) *Text {
 	return &Text{
-		Base:    Base{Flex: FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MinWidth: 1}},
+		Base: Base{
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG},
+			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MinWidth: 1},
+		},
 		Content: func() string { return s },
 	}
 }
@@ -24,7 +27,10 @@ func StaticText(s string) *Text {
 // BoundText creates a text widget bound to a signal's Get method.
 func BoundText(getter func() string) *Text {
 	return &Text{
-		Base:    Base{Flex: FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MinWidth: 1}},
+		Base: Base{
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG},
+			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MinWidth: 1},
+		},
 		Content: getter,
 	}
 }
@@ -33,6 +39,7 @@ func (t *Text) Render(r *render.Renderer, x, y, w, h int) {
 	t.Base.SetRect(x, y, w, h)
 	if t.Style.Border != style.BorderNone {
 		r.DrawBorder(x, y, w, h, t.Style.Border, t.Style)
+		t.Base.RenderLabel(r, x, y, w)
 	}
 
 	ix, iy, iw, ih := t.Style.InnerRect(x, y, w, h)

@@ -2,11 +2,11 @@ package layout
 
 // Item describes a child for the flex solver.
 type Item struct {
-	Basis     int     // desired size (-1 = auto, meaning use MinSize or 0)
-	Grow      float64 // flex-grow factor
-	Shrink    float64 // flex-shrink factor
-	MinSize   int     // minimum size
-	MaxSize   int     // maximum size (0 = no limit)
+	Basis   int     // desired size (-1 = auto, meaning use MinSize or 0)
+	Grow    float64 // flex-grow factor
+	Shrink  float64 // flex-shrink factor
+	MinSize int     // minimum size
+	MaxSize int     // maximum size (0 = no limit)
 }
 
 // Solve distributes `available` space among `items` using flexbox logic.
