@@ -8,17 +8,31 @@ import (
 
 type Input struct {
 	Base
-	Value      string
-	Cursor     int
-	OnChange   func(string)
+	Value       string
+	Cursor      int
+	OnChange    func(string)
 	Placeholder string
 }
 
+// NewInput creates a single-line text input with a border (3 rows tall).
 func NewInput(placeholder string, onChange func(string)) *Input {
 	return &Input{
 		Base: Base{
 			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG, Border: style.BorderSingle},
 			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 3, MinWidth: 5},
+		},
+		Placeholder: placeholder,
+		OnChange:    onChange,
+	}
+}
+
+// NewInlineInput creates a borderless single-line input (1 row tall).
+// Useful for compact layouts where a full bordered input is too heavy.
+func NewInlineInput(placeholder string, onChange func(string)) *Input {
+	return &Input{
+		Base: Base{
+			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG},
+			Flex:  FlexProps{Basis: -1, Grow: 1, Shrink: 1, MinHeight: 1, MaxHeight: 1, MinWidth: 5},
 		},
 		Placeholder: placeholder,
 		OnChange:    onChange,
@@ -85,29 +99,57 @@ func (inp *Input) Render(r *render.Renderer, x, y, w, h int) {
 	inp.Base.SetRect(x, y, w, h)
 	st := inp.Style
 
-	// Border with themed color
-	borderSt := st
-	if inp.Focused {
-		if inp.Editing {
-			borderSt.FG = style.CurrentTheme.EditFocusFG
+	if st.Border != style.BorderNone {
+		// Bordered mode: draw border with themed color
+		borderSt := st
+		if inp.Focused {
+			if inp.Editing {
+				borderSt.FG = style.CurrentTheme.EditFocusFG
+			} else {
+				borderSt.FG = style.CurrentTheme.NavFocusFG
+			}
 		} else {
-			borderSt.FG = style.CurrentTheme.NavFocusFG
+			borderSt.FG = style.CurrentTheme.BorderFG
 		}
+		r.DrawBorder(x, y, w, h, st.Border, borderSt)
+		inp.Base.RenderLabel(r, x, y, w)
 	} else {
-		borderSt.FG = style.CurrentTheme.BorderFG
+		// Inline mode: fill background, use underline-style highlight
+		bgSt := st
+		if inp.Focused {
+			bgSt.BG = style.CurrentTheme.SelectionBG
+		} else {
+			bgSt.BG = style.CurrentTheme.ButtonBG
+		}
+		r.FillRect(x, y, w, h, ' ', bgSt)
+		st = bgSt
 	}
-	r.DrawBorder(x, y, w, h, st.Border, borderSt)
-	inp.Base.RenderLabel(r, x, y, w)
 
-	ix, iy, iw, _ := st.InnerRect(x, y, w, h)
+	ix, iy, iw, ih := st.InnerRect(x, y, w, h)
 	if iw <= 0 {
 		return
 	}
+
+	// Center text vertically within inner rect
+	iy = iy + ih/2
 
 	display := inp.Value
 	if len(display) == 0 && !inp.Focused {
 		display = inp.Placeholder
 		st.FG = style.CurrentTheme.PlaceholderFG
+	}
+
+	// Scroll horizontally to keep cursor visible
+	scrollX := 0
+	if inp.Cursor > iw-1 {
+		scrollX = inp.Cursor - iw + 1
+	}
+	if scrollX > 0 {
+		if scrollX < len(display) {
+			display = display[scrollX:]
+		} else {
+			display = ""
+		}
 	}
 
 	if len(display) > iw {
@@ -116,15 +158,14 @@ func (inp *Input) Render(r *render.Renderer, x, y, w, h int) {
 	r.DrawText(ix, iy, display, st, iw)
 
 	// Draw cursor
-	if inp.Focused && inp.Cursor <= iw {
-		cursorX := ix + inp.Cursor
-		if cursorX < ix+iw {
-			ch := ' '
-			if inp.Cursor < len(inp.Value) {
-				ch = rune(inp.Value[inp.Cursor])
-			}
-			cursorStyle := style.Style{FG: style.CurrentTheme.CursorFG, BG: style.CurrentTheme.CursorBG}
-			r.Screen.SetContent(cursorX, iy, ch, nil, cursorStyle.TcellStyle())
+	cursorScreen := inp.Cursor - scrollX
+	if inp.Focused && cursorScreen >= 0 && cursorScreen < iw {
+		cursorX := ix + cursorScreen
+		ch := ' '
+		if inp.Cursor < len(inp.Value) {
+			ch = rune(inp.Value[inp.Cursor])
 		}
+		cursorStyle := style.Style{FG: style.CurrentTheme.CursorFG, BG: style.CurrentTheme.CursorBG}
+		r.Screen.SetContent(cursorX, iy, ch, nil, cursorStyle.TcellStyle())
 	}
 }

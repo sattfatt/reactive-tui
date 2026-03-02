@@ -8,17 +8,17 @@ import (
 
 type Button struct {
 	Base
-	Label   string
+	Text    string
 	OnClick func()
 }
 
-func NewButton(label string, onClick func()) *Button {
+func NewButton(text string, onClick func()) *Button {
 	return &Button{
 		Base: Base{
 			Style: style.Style{FG: style.CurrentTheme.FG, BG: style.CurrentTheme.BG},
 			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MaxHeight: 1, MinWidth: 3},
 		},
-		Label:   label,
+		Text:    text,
 		OnClick: onClick,
 	}
 }
@@ -48,9 +48,9 @@ func (b *Button) Render(r *render.Renderer, x, y, w, h int) {
 
 	// Fill background and center label both horizontally and vertically
 	r.FillRect(x, y, w, h, ' ', st)
-	label := "[ " + b.Label + " ]"
+	label := "[ " + b.Text + " ]"
 	if len(label) > w {
-		label = b.Label
+		label = b.Text
 		if len(label) > w {
 			label = label[:w]
 		}

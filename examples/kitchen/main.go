@@ -31,7 +31,7 @@ func main() {
 	title.Style.Bold = true
 	title.Style.FG = style.CurrentTheme.NavFocusFG
 
-	decBtn := widget.NewButton("-", func() {
+	decBtn := widget.NewButton("Dec", func() {
 		count.Update(func(v int) int { return v - 1 })
 		p := progress.Get() - 0.1
 		if p < 0 {
@@ -41,7 +41,7 @@ func main() {
 	})
 	decBtn.Flex.Basis = 10
 
-	incBtn := widget.NewButton("+", func() {
+	incBtn := widget.NewButton("Inc", func() {
 		count.Update(func(v int) int { return v + 1 })
 		p := progress.Get() + 0.1
 		if p > 1 {
@@ -68,7 +68,32 @@ func main() {
 		return math.Abs(progress.Get())
 	})
 
-	counterSection := widget.VBox(title, countDisplay, pb, btnRow)
+	// --- Checkbox ---
+	darkMode := widget.NewCheckbox("Dark mode", func(v bool) {
+		if v {
+			appendLog("Dark mode enabled")
+		} else {
+			appendLog("Dark mode disabled")
+		}
+	})
+
+	// --- Number input ---
+	numInput := widget.NewNumberInput(42, func(v int) {
+		appendLog(fmt.Sprintf("Number: %d", v))
+	})
+	numInput.WithRange(-100, 100)
+	numInput.Label = "Step"
+
+	// --- Text input ---
+	nameInput := widget.NewInput("your name", func(v string) {
+		appendLog(fmt.Sprintf("Name: %s", v))
+	})
+	nameInput.Label = "Name"
+
+	controlsRow := widget.HBox(darkMode, numInput)
+	controlsRow.Gap = 1
+
+	counterSection := widget.VBox(title, countDisplay, pb, btnRow, controlsRow, nameInput)
 	counterSection.Style.Border = style.BorderRounded
 	counterSection.Style.Padding = style.Pad(1)
 	counterSection.Label = "Counter"

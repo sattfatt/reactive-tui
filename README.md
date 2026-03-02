@@ -130,6 +130,10 @@ The App owns the tcell screen, the render loop, and the two-mode event model.
 
 **Button** — Clickable with Enter/Space. Themed focus/unfocus states. `NewButton(label, onClick)`.
 
+**Checkbox** — Boolean toggle. Space/Enter toggles in nav mode (no edit mode needed). `NewCheckbox(label, onChange)`. Renders `[✓]` or `[ ]` with label.
+
+**NumberInput** — Integer stepper with optional min/max range. Nav mode: Up/Down (or k/j) increment/decrement by `Step`. Edit mode (`i`): type digits directly, `-` toggles sign. `NewNumberInput(value, onChange).WithRange(min, max)`. Renders `◀ 42 ▶` with themed arrows.
+
 **List** — Selectable item list with Up/Down/Enter navigation. Items provided as `func() []string` for reactivity.
 
 **Table** — Data grid with fixed-width and grow columns. Header row + separator + scrollable body. `OnSelect(rowIndex)`.
