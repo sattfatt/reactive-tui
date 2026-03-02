@@ -9,24 +9,30 @@ import (
 // This enables conditional rendering based on signal state. If the function
 // returns nil, the widget renders nothing and is not focusable.
 //
-// The Content function is called once per frame (when Refresh is called or
-// on the first access) and the result is cached. This ensures the same
-// widget pointers are used for focus collection, rendering, and key handling
-// within a single frame — which is critical for focus to work correctly.
+// The Content function is called once on first access and the result is
+// cached. To rebuild the widget tree (e.g., when a selection changes),
+// call Invalidate(). This prevents signal-triggered re-renders from
+// destroying widget state (editing, focus, cursor position) by accidentally
+// rebuilding the tree.
 //
 // Example:
 //
-//	widget.NewDynamic(func() widget.Node {
+//	sidebar := widget.NewDynamic(func() widget.Node {
 //	    if showPanel.Get() {
 //	        return panel
 //	    }
 //	    return nil
 //	})
+//
+//	toggleBtn := widget.NewButton("Toggle", func() {
+//	    showPanel.Update(func(v bool) bool { return !v })
+//	    sidebar.Invalidate() // rebuild on next access
+//	})
 type Dynamic struct {
 	Base
 	Content func() Node
 	cached  Node
-	dirty   bool
+	valid   bool // true once Content() has been called and result cached
 }
 
 // NewDynamic creates a dynamic widget that renders whatever Content returns.
@@ -36,23 +42,31 @@ func NewDynamic(content func() Node) *Dynamic {
 			Flex: FlexProps{Basis: -1, Grow: 1, Shrink: 1},
 		},
 		Content: content,
-		dirty:   true,
 	}
 }
 
+// Invalidate marks the cached content as stale. The next call to any
+// method (Children, Render, etc.) will re-evaluate Content().
+// Call this when the data the Content function depends on has changed
+// and you want the widget tree to be rebuilt.
+func (d *Dynamic) Invalidate() {
+	d.valid = false
+}
+
 // Refresh re-evaluates the Content function and caches the result.
-// This is called automatically by the framework before each frame.
+// Implements the Refreshable interface for backward compatibility,
+// but prefer Invalidate() for explicit control.
 func (d *Dynamic) Refresh() {
 	if d.Content != nil {
 		d.cached = d.Content()
 	} else {
 		d.cached = nil
 	}
-	d.dirty = false
+	d.valid = true
 }
 
 func (d *Dynamic) current() Node {
-	if d.dirty {
+	if !d.valid {
 		d.Refresh()
 	}
 	return d.cached

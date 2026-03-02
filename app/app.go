@@ -296,10 +296,6 @@ func (a *App) collectFocusables() {
 		root = a.overlay
 	}
 
-	// Refresh all Dynamic widgets so they cache a stable set of child pointers
-	// for this frame. Must happen before collecting focusables.
-	refreshTree(root)
-
 	a.focusables = nil
 	collectFocusable(root, &a.focusables)
 
@@ -382,18 +378,6 @@ func (a *App) focusDirection(dx, dy int) {
 		a.focusables[a.focusIndex].SetFocused(false)
 		a.focusIndex = bestIdx
 		a.focusables[a.focusIndex].SetFocused(true)
-	}
-}
-
-// refreshTree walks the widget tree and calls Refresh() on all Refreshable
-// widgets (e.g., Dynamic). This ensures cached child pointers are stable for
-// the current frame before we collect focusables or render.
-func refreshTree(node widget.Node) {
-	if r, ok := node.(widget.Refreshable); ok {
-		r.Refresh()
-	}
-	for _, child := range node.Children() {
-		refreshTree(child)
 	}
 }
 

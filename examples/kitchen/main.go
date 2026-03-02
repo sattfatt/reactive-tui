@@ -187,17 +187,6 @@ func main() {
 	help := widget.StaticText("hjkl: move focus | Tab: cycle | i: edit mode | Esc: back to nav (3x for terminal) | Ctrl+C: quit")
 	help.Style.FG = style.CurrentTheme.MutedFG
 
-	// --- Toggle sidebar button ---
-	toggleBtn := widget.NewButton("Sidebar", func() {
-		showSidebar.Update(func(v bool) bool { return !v })
-		if showSidebar.Get() {
-			appendLog("Sidebar opened")
-		} else {
-			appendLog("Sidebar closed")
-		}
-	})
-	toggleBtn.Flex.Basis = 12
-
 	// --- Right sidebar (conditional) ---
 	sidebarList := widget.NewList(
 		func() []string {
@@ -225,6 +214,18 @@ func main() {
 		}
 		return nil
 	})
+
+	// --- Toggle sidebar button ---
+	toggleBtn := widget.NewButton("Sidebar", func() {
+		showSidebar.Update(func(v bool) bool { return !v })
+		sidebar.Invalidate() // rebuild the Dynamic widget tree
+		if showSidebar.Get() {
+			appendLog("Sidebar opened")
+		} else {
+			appendLog("Sidebar closed")
+		}
+	})
+	toggleBtn.Flex.Basis = 12
 
 	// --- Layout ---
 	topRow := widget.HBox(counterSection, tabs, sidebar)
