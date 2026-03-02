@@ -49,6 +49,14 @@ type EscapeThreshold interface {
 	EscapesToExit() int
 }
 
+// Refreshable is implemented by widgets that cache state between frames
+// (e.g., Dynamic). The app calls Refresh() on all Refreshable widgets in
+// the tree before collecting focusables, so that the same widget pointers
+// are used for focus tracking and rendering.
+type Refreshable interface {
+	Refresh()
+}
+
 // Rect stores the last rendered position and size.
 type Rect struct {
 	X, Y, W, H int

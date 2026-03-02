@@ -9,9 +9,14 @@ import (
 // This enables conditional rendering based on signal state. If the function
 // returns nil, the widget renders nothing and is not focusable.
 //
+// The Content function is called once per frame (when Refresh is called or
+// on the first access) and the result is cached. This ensures the same
+// widget pointers are used for focus collection, rendering, and key handling
+// within a single frame — which is critical for focus to work correctly.
+//
 // Example:
 //
-//	widget.Dynamic(func() widget.Node {
+//	widget.NewDynamic(func() widget.Node {
 //	    if showPanel.Get() {
 //	        return panel
 //	    }
@@ -20,6 +25,8 @@ import (
 type Dynamic struct {
 	Base
 	Content func() Node
+	cached  Node
+	dirty   bool
 }
 
 // NewDynamic creates a dynamic widget that renders whatever Content returns.
@@ -29,14 +36,26 @@ func NewDynamic(content func() Node) *Dynamic {
 			Flex: FlexProps{Basis: -1, Grow: 1, Shrink: 1},
 		},
 		Content: content,
+		dirty:   true,
 	}
 }
 
-func (d *Dynamic) current() Node {
+// Refresh re-evaluates the Content function and caches the result.
+// This is called automatically by the framework before each frame.
+func (d *Dynamic) Refresh() {
 	if d.Content != nil {
-		return d.Content()
+		d.cached = d.Content()
+	} else {
+		d.cached = nil
 	}
-	return nil
+	d.dirty = false
+}
+
+func (d *Dynamic) current() Node {
+	if d.dirty {
+		d.Refresh()
+	}
+	return d.cached
 }
 
 func (d *Dynamic) Focusable() bool {

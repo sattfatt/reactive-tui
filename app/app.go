@@ -286,19 +286,29 @@ func (a *App) cycleFocus(reverse bool) {
 
 func (a *App) collectFocusables() {
 	var currentFocused widget.Node
+	oldIndex := a.focusIndex
 	if a.focusIndex < len(a.focusables) {
 		currentFocused = a.focusables[a.focusIndex]
 	}
 
-	a.focusables = nil
 	root := a.Root
 	if a.overlay != nil {
 		root = a.overlay
 	}
+
+	// Refresh all Dynamic widgets so they cache a stable set of child pointers
+	// for this frame. Must happen before collecting focusables.
+	refreshTree(root)
+
+	a.focusables = nil
 	collectFocusable(root, &a.focusables)
 
+	if len(a.focusables) == 0 {
+		a.focusIndex = 0
+		return
+	}
+
 	// Try to preserve focus on the same widget by pointer identity
-	a.focusIndex = 0
 	if currentFocused != nil {
 		for i, n := range a.focusables {
 			if n == currentFocused {
@@ -306,10 +316,18 @@ func (a *App) collectFocusables() {
 				return
 			}
 		}
+		// Widget pointer changed (e.g., Dynamic rebuilt). Keep the position
+		// in the focus ring so the user doesn't jump to widget 0.
+		if oldIndex < len(a.focusables) {
+			a.focusIndex = oldIndex
+		} else {
+			a.focusIndex = len(a.focusables) - 1
+		}
+		a.focusables[a.focusIndex].SetFocused(true)
+		return
 	}
-	if a.focusIndex >= len(a.focusables) {
-		a.focusIndex = 0
-	}
+
+	a.focusIndex = 0
 }
 
 type rectGetter interface {
@@ -364,6 +382,18 @@ func (a *App) focusDirection(dx, dy int) {
 		a.focusables[a.focusIndex].SetFocused(false)
 		a.focusIndex = bestIdx
 		a.focusables[a.focusIndex].SetFocused(true)
+	}
+}
+
+// refreshTree walks the widget tree and calls Refresh() on all Refreshable
+// widgets (e.g., Dynamic). This ensures cached child pointers are stable for
+// the current frame before we collect focusables or render.
+func refreshTree(node widget.Node) {
+	if r, ok := node.(widget.Refreshable); ok {
+		r.Refresh()
+	}
+	for _, child := range node.Children() {
+		refreshTree(child)
 	}
 }
 

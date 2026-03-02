@@ -51,7 +51,17 @@ func (l *List) HandleKey(ev KeyEvent) bool {
 func (l *List) Render(r *render.Renderer, x, y, w, h int) {
 	l.Base.SetRect(x, y, w, h)
 	if l.Style.Border != style.BorderNone {
-		r.DrawBorder(x, y, w, h, l.Style.Border, l.Style)
+		borderSt := l.Style
+		if l.Focused {
+			if l.Editing {
+				borderSt.FG = style.CurrentTheme.EditFocusFG
+			} else {
+				borderSt.FG = style.CurrentTheme.NavFocusFG
+			}
+		} else {
+			borderSt.FG = style.CurrentTheme.BorderFG
+		}
+		r.DrawBorder(x, y, w, h, l.Style.Border, borderSt)
 		l.Base.RenderLabel(r, x, y, w)
 	}
 
