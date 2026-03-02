@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/signal"
-	"github.com/satyam/reactive-tui/style"
-	"github.com/satyam/reactive-tui/widget"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/signal"
+	"github.com/sattfatt/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/widget"
 )
 
 // AppMode determines how key events are routed.

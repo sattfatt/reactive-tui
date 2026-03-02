@@ -3,9 +3,9 @@ package app
 import (
 	"testing"
 
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/style"
-	"github.com/satyam/reactive-tui/widget"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/widget"
 
 	"github.com/gdamore/tcell/v2"
 )

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/satyam/reactive-tui/app"
-	"github.com/satyam/reactive-tui/signal"
-	"github.com/satyam/reactive-tui/style"
-	"github.com/satyam/reactive-tui/widget"
+	"github.com/sattfatt/reactive-tui/app"
+	"github.com/sattfatt/reactive-tui/signal"
+	"github.com/sattfatt/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/widget"
 )
 
 func main() {

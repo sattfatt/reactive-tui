@@ -6,8 +6,8 @@ import (
 	"unicode"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 // NumberInput is a numeric stepper widget. In navigation mode, Up/Down

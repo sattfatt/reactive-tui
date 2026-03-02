@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 func newTestScreen(w, h int) tcell.SimulationScreen {

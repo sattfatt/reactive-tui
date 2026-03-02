@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 func newTestRenderer(w, h int) (*render.Renderer, tcell.SimulationScreen) {

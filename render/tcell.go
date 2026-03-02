@@ -2,7 +2,7 @@ package render
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 type Renderer struct {

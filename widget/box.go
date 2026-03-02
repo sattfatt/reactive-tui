@@ -1,9 +1,9 @@
 package widget
 
 import (
-	"github.com/satyam/reactive-tui/layout"
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/layout"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 type Direction int

@@ -1,8 +1,8 @@
 package widget
 
 import (
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 // Dynamic is a widget that delegates to whatever node a function returns.

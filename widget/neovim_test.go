@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 func TestNeovimEditorInterfaces(t *testing.T) {

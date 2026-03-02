@@ -6,9 +6,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/signal"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/signal"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 // NeovimEditor embeds neovim inside a terminal widget as a rich text editor.

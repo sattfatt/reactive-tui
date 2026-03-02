@@ -11,9 +11,9 @@ import (
 	"github.com/creack/pty"
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/signal"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/signal"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 type termCell struct {

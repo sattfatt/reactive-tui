@@ -5,8 +5,8 @@ import (
 	"unicode"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/satyam/reactive-tui/render"
-	"github.com/satyam/reactive-tui/style"
+	"github.com/sattfatt/reactive-tui/render"
+	"github.com/sattfatt/reactive-tui/style"
 )
 
 type FuzzyMatch struct {
