@@ -14,7 +14,10 @@ type Button struct {
 
 func NewButton(label string, onClick func()) *Button {
 	return &Button{
-		Base:    Base{Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault}},
+		Base: Base{
+			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault},
+			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 3, MinWidth: 5},
+		},
 		Label:   label,
 		OnClick: onClick,
 	}
@@ -33,6 +36,7 @@ func (b *Button) HandleKey(ev KeyEvent) bool {
 }
 
 func (b *Button) Render(r *render.Renderer, x, y, w, h int) {
+	b.Base.SetRect(x, y, w, h)
 	st := b.Style
 	if b.Focused {
 		// Invert colors when focused
@@ -56,11 +60,21 @@ func (b *Button) Render(r *render.Renderer, x, y, w, h int) {
 		return
 	}
 
-	// Center the label
+	// Center the label symmetrically by padding both sides
 	label := b.Label
 	if len(label) > iw {
 		label = label[:iw]
 	}
-	padLeft := (iw - len(label)) / 2
-	r.DrawText(ix+padLeft, iy, label, st, iw)
+	pad := iw - len(label)
+	left := pad / 2
+	right := pad - left
+	centered := ""
+	for range left {
+		centered += " "
+	}
+	centered += label
+	for range right {
+		centered += " "
+	}
+	r.DrawText(ix, iy, centered, st, iw)
 }

@@ -14,65 +14,40 @@ import (
 func main() {
 	count := signal.New(0)
 
-	root := &widget.Box{
-		Base: widget.Base{
-			Style: style.Style{
-				Border:  style.BorderRounded,
-				Padding: style.Pad(1),
-				FG:      tcell.ColorWhite,
-			},
-			Flex: widget.FlexProps{Grow: 1},
-		},
-		Dir: widget.Column,
-		Gap: 1,
-		Items: []widget.Node{
-			// Title
-			func() widget.Node {
-				t := widget.StaticText("Reactive TUI Counter")
-				t.Style.Bold = true
-				t.Style.FG = tcell.ColorAqua
-				return t
-			}(),
-			// Count display
-			widget.BoundText(func() string {
-				return fmt.Sprintf("Count: %d", count.Get())
-			}),
-			// Buttons row
-			&widget.Box{
-				Dir: widget.Row,
-				Gap: 2,
-				Items: []widget.Node{
-					func() widget.Node {
-						b := widget.NewButton("[ - ]", func() {
-							count.Update(func(v int) int { return v - 1 })
-						})
-						b.Flex.Basis = 10
-						return b
-					}(),
-					func() widget.Node {
-						b := widget.NewButton("[ + ]", func() {
-							count.Update(func(v int) int { return v + 1 })
-						})
-						b.Flex.Basis = 10
-						return b
-					}(),
-					func() widget.Node {
-						b := widget.NewButton("[Reset]", func() {
-							count.Set(0)
-						})
-						b.Flex.Basis = 10
-						return b
-					}(),
-				},
-			},
-			// Instructions
-			func() widget.Node {
-				t := widget.StaticText("Tab: switch focus | Enter/Space: press button | Ctrl+C: quit")
-				t.Style.FG = tcell.ColorGray
-				return t
-			}(),
-		},
-	}
+	decBtn := widget.NewButton("[ - ]", func() {
+		count.Update(func(v int) int { return v - 1 })
+	})
+	decBtn.Flex.Basis = 10
+
+	incBtn := widget.NewButton("[ + ]", func() {
+		count.Update(func(v int) int { return v + 1 })
+	})
+	incBtn.Flex.Basis = 10
+
+	resetBtn := widget.NewButton("[Reset]", func() {
+		count.Set(0)
+	})
+	resetBtn.Flex.Basis = 10
+
+	btnRow := widget.HBox(decBtn, incBtn, resetBtn)
+	btnRow.Gap = 2
+
+	title := widget.StaticText("Reactive TUI Counter")
+	title.Style.Bold = true
+	title.Style.FG = tcell.ColorAqua
+
+	countDisplay := widget.BoundText(func() string {
+		return fmt.Sprintf("Count: %d", count.Get())
+	})
+
+	help := widget.StaticText("Tab: switch focus | Enter/Space: press button | Ctrl+C: quit")
+	help.Style.FG = tcell.ColorGray
+
+	root := widget.VBox(title, countDisplay, btnRow, help)
+	root.Style.Border = style.BorderRounded
+	root.Style.Padding = style.Pad(1)
+	root.Style.FG = tcell.ColorWhite
+	root.Flex.Grow = 1
 
 	a := app.New(root)
 	if err := a.Run(); err != nil {

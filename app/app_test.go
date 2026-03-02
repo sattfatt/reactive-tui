@@ -281,6 +281,187 @@ func TestRenderWithBox(t *testing.T) {
 	}
 }
 
+// --- Stale focus fix tests ---
+
+func TestTabsSwitchRecollectsFocusables(t *testing.T) {
+	btn1 := widget.NewButton("Tab1Btn", nil)
+	btn2 := widget.NewButton("Tab2Btn", nil)
+
+	tabs := widget.NewTabs(
+		widget.Tab{Label: "One", Content: btn1},
+		widget.Tab{Label: "Two", Content: btn2},
+	)
+	root := widget.VBox(tabs)
+
+	a, s := newTestApp(root)
+	defer s.Fini()
+
+	a.collectFocusables()
+	// Initially: tabs + btn1 are focusable
+	hasTabs := false
+	hasBtn1 := false
+	for _, f := range a.focusables {
+		if f == tabs {
+			hasTabs = true
+		}
+		if f == btn1 {
+			hasBtn1 = true
+		}
+	}
+	if !hasTabs || !hasBtn1 {
+		t.Errorf("expected tabs and btn1 in focusables, got %d items", len(a.focusables))
+	}
+
+	// Focus on tabs, switch to tab 2
+	for i, f := range a.focusables {
+		if f == tabs {
+			a.focusIndex = i
+			f.SetFocused(true)
+			break
+		}
+	}
+
+	// Simulate pressing Right to switch to tab 2
+	ev := tcell.NewEventKey(tcell.KeyRight, 0, tcell.ModNone)
+	a.handleEvent(ev)
+
+	// After handleEvent, focusables should be recollected
+	hasBtn2 := false
+	hasBtn1After := false
+	for _, f := range a.focusables {
+		if f == btn2 {
+			hasBtn2 = true
+		}
+		if f == btn1 {
+			hasBtn1After = true
+		}
+	}
+	if !hasBtn2 {
+		t.Error("btn2 should be in focusables after switching to tab 2")
+	}
+	if hasBtn1After {
+		t.Error("btn1 should NOT be in focusables after switching to tab 2")
+	}
+}
+
+func TestFocusPreservedAfterRecollect(t *testing.T) {
+	btn1 := widget.NewButton("A", nil)
+	btn2 := widget.NewButton("B", nil)
+	root := widget.VBox(btn1, btn2)
+
+	a, s := newTestApp(root)
+	defer s.Fini()
+
+	a.collectFocusables()
+	a.focusIndex = 1
+	a.focusables[1].SetFocused(true)
+
+	// Recollect
+	a.collectFocusables()
+
+	// btn2 should still be focused (index preserved by pointer identity)
+	if a.focusIndex != 1 {
+		t.Errorf("expected focusIndex=1 preserved, got %d", a.focusIndex)
+	}
+	if a.focusables[a.focusIndex] != btn2 {
+		t.Error("focus should still be on btn2")
+	}
+}
+
+// --- Directional focus tests ---
+
+func TestFocusDirectionHorizontal(t *testing.T) {
+	btn1 := widget.NewButton("L", nil)
+	btn1.Flex = widget.FlexProps{Basis: 10}
+	btn2 := widget.NewButton("R", nil)
+	btn2.Flex = widget.FlexProps{Basis: 10}
+
+	root := widget.HBox(btn1, btn2)
+	a, s := newTestApp(root)
+	defer s.Fini()
+
+	// Render to populate rects
+	a.render()
+	a.collectFocusables()
+	a.focusIndex = 0
+	a.focusables[0].SetFocused(true)
+
+	// Move right
+	a.focusDirection(1, 0)
+	if a.focusIndex != 1 {
+		t.Errorf("expected focus to move right to index 1, got %d", a.focusIndex)
+	}
+
+	// Move left
+	a.focusDirection(-1, 0)
+	if a.focusIndex != 0 {
+		t.Errorf("expected focus to move left to index 0, got %d", a.focusIndex)
+	}
+}
+
+func TestFocusDirectionVertical(t *testing.T) {
+	btn1 := widget.NewButton("Top", nil)
+	btn2 := widget.NewButton("Bot", nil)
+
+	root := widget.VBox(btn1, btn2)
+	a, s := newTestApp(root)
+	defer s.Fini()
+
+	a.render()
+	a.collectFocusables()
+	a.focusIndex = 0
+	a.focusables[0].SetFocused(true)
+
+	// Move down
+	a.focusDirection(0, 1)
+	if a.focusIndex != 1 {
+		t.Errorf("expected focus to move down to index 1, got %d", a.focusIndex)
+	}
+
+	// Move up
+	a.focusDirection(0, -1)
+	if a.focusIndex != 0 {
+		t.Errorf("expected focus to move up to index 0, got %d", a.focusIndex)
+	}
+}
+
+func TestFocusDirectionNoWrap(t *testing.T) {
+	btn1 := widget.NewButton("A", nil)
+	btn2 := widget.NewButton("B", nil)
+
+	root := widget.HBox(btn1, btn2)
+	a, s := newTestApp(root)
+	defer s.Fini()
+
+	a.render()
+	a.collectFocusables()
+	a.focusIndex = 0
+	a.focusables[0].SetFocused(true)
+
+	// Move left from leftmost — should stay
+	a.focusDirection(-1, 0)
+	if a.focusIndex != 0 {
+		t.Errorf("expected no wrap, focus should stay at 0, got %d", a.focusIndex)
+	}
+}
+
+func TestFocusDirectionSingleWidget(t *testing.T) {
+	btn := widget.NewButton("A", nil)
+	root := widget.VBox(btn)
+	a, s := newTestApp(root)
+	defer s.Fini()
+
+	a.render()
+	a.collectFocusables()
+	a.focusIndex = 0
+
+	// Should not panic with single widget
+	a.focusDirection(1, 0)
+	if a.focusIndex != 0 {
+		t.Errorf("expected index 0 with single widget, got %d", a.focusIndex)
+	}
+}
+
 func TestFocusIndexClamped(t *testing.T) {
 	btn := widget.NewButton("A", nil)
 	root := widget.VBox(btn)

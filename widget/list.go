@@ -15,7 +15,10 @@ type List struct {
 
 func NewList(items func() []string, onSelect func(int)) *List {
 	return &List{
-		Base:     Base{Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault}},
+		Base: Base{
+			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault},
+			Flex:  FlexProps{Basis: -1, Shrink: 1, Grow: 1, MinHeight: 1, MinWidth: 1},
+		},
 		Items:    items,
 		OnSelect: onSelect,
 	}
@@ -46,6 +49,7 @@ func (l *List) HandleKey(ev KeyEvent) bool {
 }
 
 func (l *List) Render(r *render.Renderer, x, y, w, h int) {
+	l.Base.SetRect(x, y, w, h)
 	if l.Style.Border != style.BorderNone {
 		r.DrawBorder(x, y, w, h, l.Style.Border, l.Style)
 	}

@@ -23,16 +23,78 @@ type Box struct {
 }
 
 func VBox(children ...Node) *Box {
-	return &Box{Dir: Column, Items: children}
+	return &Box{
+		Base: Base{Flex: FlexProps{Basis: -1, Shrink: 1}},
+		Dir:  Column, Items: children,
+	}
 }
 
 func HBox(children ...Node) *Box {
-	return &Box{Dir: Row, Items: children}
+	return &Box{
+		Base: Base{Flex: FlexProps{Basis: -1, Shrink: 1}},
+		Dir:  Row, Items: children,
+	}
 }
 
 func (b *Box) Children() []Node { return b.Items }
 
+// FlexProps computes min sizes from children when Basis is auto (-1).
+func (b *Box) FlexProps() FlexProps {
+	fp := b.Flex
+	if fp.Basis >= 0 {
+		return fp
+	}
+
+	// Compute intrinsic min size from children
+	minMain := 0
+	minCross := 0
+	for _, child := range b.Items {
+		cfp := child.FlexProps()
+		var childMain, childCross int
+		if b.Dir == Column {
+			childMain = cfp.MinHeight
+			if cfp.Basis > 0 {
+				childMain = cfp.Basis
+			}
+			childCross = cfp.MinWidth
+		} else {
+			childMain = cfp.MinWidth
+			if cfp.Basis > 0 {
+				childMain = cfp.Basis
+			}
+			childCross = cfp.MinHeight
+		}
+		minMain += childMain
+		if childCross > minCross {
+			minCross = childCross
+		}
+	}
+	if len(b.Items) > 1 {
+		minMain += b.Gap * (len(b.Items) - 1)
+	}
+	minMain += b.Style.ChromeHeight()
+	minCross += b.Style.ChromeWidth()
+
+	if b.Dir == Column {
+		if fp.MinHeight < minMain {
+			fp.MinHeight = minMain
+		}
+		if fp.MinWidth < minCross {
+			fp.MinWidth = minCross
+		}
+	} else {
+		if fp.MinWidth < minMain {
+			fp.MinWidth = minMain
+		}
+		if fp.MinHeight < minCross {
+			fp.MinHeight = minCross
+		}
+	}
+	return fp
+}
+
 func (b *Box) Render(r *render.Renderer, x, y, w, h int) {
+	b.Base.SetRect(x, y, w, h)
 	// Draw border and background
 	if b.Style.Border != style.BorderNone {
 		r.DrawBorder(x, y, w, h, b.Style.Border, b.Style)

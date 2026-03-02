@@ -9,20 +9,28 @@ import (
 
 type Text struct {
 	Base
-	Content func() string // reactive getter
+	Content      func() string // reactive getter
+	ScrollBottom bool          // if true, show last lines instead of first
 }
 
 // StaticText creates a text widget with a fixed string.
 func StaticText(s string) *Text {
-	return &Text{Content: func() string { return s }}
+	return &Text{
+		Base:    Base{Flex: FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MinWidth: 1}},
+		Content: func() string { return s },
+	}
 }
 
 // BoundText creates a text widget bound to a signal's Get method.
 func BoundText(getter func() string) *Text {
-	return &Text{Content: getter}
+	return &Text{
+		Base:    Base{Flex: FlexProps{Basis: -1, Shrink: 1, MinHeight: 1, MinWidth: 1}},
+		Content: getter,
+	}
 }
 
 func (t *Text) Render(r *render.Renderer, x, y, w, h int) {
+	t.Base.SetRect(x, y, w, h)
 	if t.Style.Border != style.BorderNone {
 		r.DrawBorder(x, y, w, h, t.Style.Border, t.Style)
 	}
@@ -33,16 +41,21 @@ func (t *Text) Render(r *render.Renderer, x, y, w, h int) {
 	}
 
 	text := t.Content()
-	lines := wrapText(text, iw)
-	for i, line := range lines {
-		if i >= ih {
-			break
-		}
-		r.DrawText(ix, iy+i, line, t.Style, iw)
+	lines := WrapText(text, iw)
+
+	// If ScrollBottom, show the last ih lines
+	start := 0
+	if t.ScrollBottom && len(lines) > ih {
+		start = len(lines) - ih
+	}
+
+	for i := start; i < len(lines) && i-start < ih; i++ {
+		r.DrawText(ix, iy+i-start, lines[i], t.Style, iw)
 	}
 }
 
-func wrapText(text string, width int) []string {
+// WrapText splits text into lines that fit within width, breaking at spaces.
+func WrapText(text string, width int) []string {
 	if width <= 0 {
 		return nil
 	}

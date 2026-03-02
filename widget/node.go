@@ -32,6 +32,12 @@ type Node interface {
 type KeyEvent struct {
 	Key  int
 	Rune rune
+	Mod  int // tcell.ModMask cast to int
+}
+
+// Rect stores the last rendered position and size.
+type Rect struct {
+	X, Y, W, H int
 }
 
 type FlexProps struct {
@@ -57,6 +63,7 @@ type Base struct {
 	Style   style.Style
 	Flex    FlexProps
 	Focused bool
+	LayoutRect Rect // populated during Render
 }
 
 func (b *Base) FlexProps() FlexProps    { return b.Flex }
@@ -65,3 +72,5 @@ func (b *Base) Children() []Node        { return nil }
 func (b *Base) Focusable() bool         { return false }
 func (b *Base) HandleKey(KeyEvent) bool { return false }
 func (b *Base) SetFocused(f bool)       { b.Focused = f }
+func (b *Base) SetRect(x, y, w, h int) { b.LayoutRect = Rect{x, y, w, h} }
+func (b *Base) GetRect() Rect           { return b.LayoutRect }

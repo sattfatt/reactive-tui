@@ -16,7 +16,10 @@ type Input struct {
 
 func NewInput(placeholder string, onChange func(string)) *Input {
 	return &Input{
-		Base:        Base{Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault, Border: style.BorderSingle}},
+		Base: Base{
+			Style: style.Style{FG: tcell.ColorWhite, BG: tcell.ColorDefault, Border: style.BorderSingle},
+			Flex:  FlexProps{Basis: -1, Shrink: 1, MinHeight: 3, MinWidth: 5},
+		},
 		Placeholder: placeholder,
 		OnChange:    onChange,
 	}
@@ -65,6 +68,7 @@ func (inp *Input) HandleKey(ev KeyEvent) bool {
 }
 
 func (inp *Input) Render(r *render.Renderer, x, y, w, h int) {
+	inp.Base.SetRect(x, y, w, h)
 	st := inp.Style
 	if inp.Focused {
 		st.FG = tcell.ColorYellow
